@@ -10,6 +10,8 @@ usage: refresh list                 displays, current mode, offered and advertis
        refresh edid <id> [file]     print the current EDID's timings (and save it)
        refresh scan <id> [--no-hdr] find the fastest rate (and HDR rate) this setup accepts
        refresh reset [<id>]         drop EDID overrides, back to the monitor's own
+       refresh save                 remember the current setup for this set of displays
+       refresh keep                 stay running, put saved setups back after replug and sleep
 """
 
 func fail(_ s: String) -> Never { FileHandle.standardError.write(Data((s + "\n").utf8)); exit(1) }
@@ -56,6 +58,21 @@ case "scan":
 case "reset":
     let targets = args.count > 1 ? [display(args[1])] : Display.online().filter { !$0.isBuiltin }
     for d in targets { print("\(d.id): 0x\(String(d.av?.setEDID(nil) ?? 0, radix: 16))") }
+
+case "save":
+    let p = Profile.current()
+    do { try p.save() } catch { fail("save failed: \(error)") }
+    for m in p.monitors { print("\(m.key)  \(m.pixelWidth)x\(m.pixelHeight)@\(m.hz)  HDR \(m.hdr ? "on" : "off")  EDID \(m.edid?.bytes.count ?? 0) bytes") }
+    print("saved for \(p.keys.count) displays in \(Profile.url.path)")
+
+case "keep":
+    setvbuf(stdout, nil, _IOLBF, 0) // line-buffered so a LaunchAgent log file stays current
+    let profiles: [Profile]
+    do { profiles = try Profile.load() } catch { fail("cannot read \(Profile.url.path): \(error)") }
+    if profiles.isEmpty { fail("no saved setup; run `refresh save` first") }
+    let keeper = Keeper(profiles: profiles) { print("\(Date().formatted(date: .omitted, time: .standard)) \($0)") }
+    keeper.start()
+    NSApp.run()
 
 default:
     print(usage)

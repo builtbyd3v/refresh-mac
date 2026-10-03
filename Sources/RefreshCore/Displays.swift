@@ -73,6 +73,7 @@ public final class DisplayEvents {
     public static let shared = DisplayEvents()
     public var added: Set<CGDirectDisplayID> = []
     public private(set) var last = Date.distantPast
+    public var onChange: (() -> Void)?
 
     private init() {
         CGDisplayRegisterReconfigurationCallback({ id, flags, _ in
@@ -80,6 +81,7 @@ public final class DisplayEvents {
             let s = DisplayEvents.shared
             s.last = Date()
             if flags.contains(.addFlag) { s.added.insert(id) }
+            s.onChange?()
         }, nil)
     }
 
@@ -99,7 +101,7 @@ extension Display {
 }
 
 /// Where each display sits and how it is turned, so it can be put back after macOS reshuffles.
-public struct Placement: Codable, Sendable {
+public struct Placement: Codable, Hashable, Sendable {
     public var key: DisplayKey
     public var rotation, x, y: Int
 
