@@ -20,6 +20,7 @@ let xg27 = EDID(try! Data(contentsOf: URL(fileURLWithPath: #filePath).deletingLa
     #expect(e.bytes[0x84...0x86] == [0xe2, 0x78, 3]) // HF-EEODB count bumped
     #expect(e.bytes[384 + 1..<384 + 127].reduce(0) { $0 + Int($1) } % 256 == 0) // DisplayID section checksum
     #expect(Array(e.bytes.prefix(128)) == Array(xg27.bytes.prefix(128)))
+    #expect(e.hasAppendedBlock && !xg27.hasAppendedBlock)
     let added = e.timings.suffix(2)
     #expect(added.map(\.hz) == [345, 325])
     #expect(added.first!.pixelClock == 147_329) // 2720 x 1570 x 345 Hz = 1473.29 MHz, the proven timing

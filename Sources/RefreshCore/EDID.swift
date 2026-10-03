@@ -123,6 +123,12 @@ public struct EDID: Equatable, Sendable {
         return EDID(Data(b))!
     }
 
+    /// True when the last block is one `appending` wrote, i.e. a scan result is injected.
+    // note: header match only; a monitor whose own last block is a bare one-section Type I DisplayID extension would read as scanned
+    public var hasAppendedBlock: Bool {
+        bytes.count > 128 && Array(bytes[(bytes.count - 128)..<(bytes.count - 121)]) == [0x70, 0x12, 121, 0, 0, 0x03, 0x01]
+    }
+
     /// Offset of the HF-EEODB block-count byte in the first CTA extension, if any.
     private var eeodbCount: Int? {
         guard bytes.count > 128, bytes[128] == 0x02 else { return nil }

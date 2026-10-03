@@ -12,6 +12,7 @@ usage: refresh list                 displays, current mode, offered and advertis
        refresh reset [<id>]         drop EDID overrides, back to the monitor's own
        refresh save                 remember the current setup for this set of displays
        refresh keep                 stay running, put saved setups back after replug and sleep
+       refresh diagnose             chip, display engines, ports, and problems software cannot fix
 """
 
 func fail(_ s: String) -> Never { FileHandle.standardError.write(Data((s + "\n").utf8)); exit(1) }
@@ -20,6 +21,8 @@ func display(_ arg: String?) -> Display {
     guard let arg, let id = UInt32(arg), let d = Display.online().first(where: { $0.id == id }) else { fail("unknown display id; see `refresh list`") }
     return d
 }
+
+extension String { var nilIfEmpty: String? { isEmpty ? nil : self } }
 
 func hz(_ m: CGDisplayMode?) -> String { m.map { "\($0.pixelWidth)x\($0.pixelHeight)@\(Int($0.refreshRate.rounded()))" } ?? "?" }
 
@@ -73,6 +76,15 @@ case "keep":
     let keeper = Keeper(profiles: profiles) { print("\(Date().formatted(date: .omitted, time: .standard)) \($0)") }
     keeper.start()
     NSApp.run()
+
+case "diagnose":
+    let g = Diagnosis.run()
+    print("\(g.chip): \(g.engines) external display engine\(g.engines == 1 ? "" : "s"), \(g.externals.count) external display\(g.externals.count == 1 ? "" : "s") on")
+    for e in g.externals { print("  \(e.id)  \(e.name)  offered max \(e.offeredMax)Hz  advertised \(e.advertisedMax)Hz\(e.scanned ? "  (scanned rates injected)" : "")") }
+    for p in g.ports { print("  \(p.name)  active: \(p.active.joined(separator: ",").nilIfEmpty ?? "none")  set up: \(p.provisioned.joined(separator: ","))") }
+    print("  DisplayLink: \(g.displayLink ? "yes" : "no")  mirroring: \(g.mirrored ? "yes" : "no")")
+    let f = g.findings
+    print(f.isEmpty ? "\nNo problems found." : "\n" + f.map { "- " + $0 }.joined(separator: "\n"))
 
 default:
     print(usage)
