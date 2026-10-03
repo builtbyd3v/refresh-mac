@@ -133,7 +133,7 @@ public struct Scanner {
     }
 
     /// Inject (or clear) the EDID, then wait for the monitor to drop, come back, and macOS to finish reconfiguring.
-    func apply(_ e: EDID?) throws {
+    public func apply(_ e: EDID?) throws {
         guard let av = AVService.find(key) else { throw ScanError.notFound }
         let ev = DisplayEvents.shared, before = av.edid
         ev.added = []

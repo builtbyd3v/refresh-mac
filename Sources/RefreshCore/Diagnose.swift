@@ -40,6 +40,16 @@ public struct Diagnosis {
         )
     }
 
+    /// Human-readable summary: hardware first, then findings.
+    public var report: String {
+        var out = ["\(chip): \(engines) external display engine\(engines == 1 ? "" : "s"), \(externals.count) external display\(externals.count == 1 ? "" : "s") on"]
+        for e in externals { out.append("  \(e.id)  \(e.name)  offered max \(e.offeredMax)Hz  advertised \(e.advertisedMax)Hz\(e.scanned ? "  (scanned rates injected)" : "")") }
+        for p in ports { out.append("  \(p.name)  active: \(p.active.isEmpty ? "none" : p.active.joined(separator: ","))  set up: \(p.provisioned.joined(separator: ","))") }
+        out.append("  DisplayLink: \(displayLink ? "yes" : "no")  mirroring: \(mirrored ? "yes" : "no")")
+        out.append(findings.isEmpty ? "\nNo problems found." : "\n" + findings.map { "- " + $0 }.joined(separator: "\n"))
+        return out.joined(separator: "\n")
+    }
+
     /// Plain-language problems, each with what to do. Empty means nothing to report.
     public var findings: [String] {
         var out: [String] = []

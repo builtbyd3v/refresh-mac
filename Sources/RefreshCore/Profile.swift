@@ -36,6 +36,25 @@ public struct Profile: Codable, Sendable {
         return Profile(monitors: monitors, placements: Placement.current())
     }
 
+    /// Put this setup back now, blocking for a few seconds (undo after a scan). The keeper does the same in the background.
+    public func restore() throws {
+        for m in monitors {
+            if let want = m.edid, AVService.find(m.key)?.edid != want {
+                let s = Scanner(key: m.key)
+                try s.apply(want.hasAppendedBlock ? want : nil)
+                if AVService.find(m.key)?.edid != want { try s.apply(want) } // an older override that is not ours
+            }
+            guard let d = Display.find(m.key) else { continue }
+            if d.mode.map(m.matches) != true, let mode = d.modes.first(where: m.matches) {
+                d.set(mode)
+                DisplayEvents.shared.settle(quiet: 1)
+            }
+            if m.hdr { wait(3) { d.hdrAvailable } }
+            if d.hdr != m.hdr { d.hdr = m.hdr }
+        }
+        Placement.restore(placements)
+    }
+
     /// Saved profiles. Throws on a corrupt file so a later save cannot silently wipe it.
     public static func load() throws -> [Profile] {
         guard FileManager.default.fileExists(atPath: url.path) else { return [] }

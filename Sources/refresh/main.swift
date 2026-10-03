@@ -22,8 +22,6 @@ func display(_ arg: String?) -> Display {
     return d
 }
 
-extension String { var nilIfEmpty: String? { isEmpty ? nil : self } }
-
 func hz(_ m: CGDisplayMode?) -> String { m.map { "\($0.pixelWidth)x\($0.pixelHeight)@\(Int($0.refreshRate.rounded()))" } ?? "?" }
 
 guard AVService.available else { fail("private IOAVService API missing on this macOS") }
@@ -78,13 +76,7 @@ case "keep":
     NSApp.run()
 
 case "diagnose":
-    let g = Diagnosis.run()
-    print("\(g.chip): \(g.engines) external display engine\(g.engines == 1 ? "" : "s"), \(g.externals.count) external display\(g.externals.count == 1 ? "" : "s") on")
-    for e in g.externals { print("  \(e.id)  \(e.name)  offered max \(e.offeredMax)Hz  advertised \(e.advertisedMax)Hz\(e.scanned ? "  (scanned rates injected)" : "")") }
-    for p in g.ports { print("  \(p.name)  active: \(p.active.joined(separator: ",").nilIfEmpty ?? "none")  set up: \(p.provisioned.joined(separator: ","))") }
-    print("  DisplayLink: \(g.displayLink ? "yes" : "no")  mirroring: \(g.mirrored ? "yes" : "no")")
-    let f = g.findings
-    print(f.isEmpty ? "\nNo problems found." : "\n" + f.map { "- " + $0 }.joined(separator: "\n"))
+    print(Diagnosis.run().report)
 
 default:
     print(usage)

@@ -21,6 +21,12 @@ public final class Keeper {
         burst()
     }
 
+    public func stop() {
+        DisplayEvents.shared.onChange = nil
+        timer?.invalidate()
+        timer = nil
+    }
+
     /// Check every 0.25s until done or 20s after the latest display event, then stop the timer.
     private func burst() {
         burstEnd = Date().addingTimeInterval(20)
